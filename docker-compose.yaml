@@ -1,0 +1,48 @@
+version: '3.3'
+
+networks:
+  webapp:
+
+services:
+  nginx:
+    image: nginx:stable-alpine
+    container_name: test_nginx
+    ports: 
+      - "8000:80"
+    links: 
+      - php
+    volumes:
+      - ./:var/www/html
+      - ./docker/nginx/site.conf:/etc/nginx/conf.d/default.conf:rw
+      - ./docker/logs/nginx:var/logs/nginx:rw
+    depends_on:
+      - php
+      - postgres
+    networks: 
+      - webapp  
+
+  php:
+    build: 
+      context: .
+      dockerfile: dockerfile
+    container_name: test_php
+    volumes:
+      - ./:var/www/html 
+    ports:
+      - "9001:9000"
+
+  postgres: 
+    image: postgres:12.3-alpine
+    container_name: test_postgres
+    restart: unless-stopped
+    ports: 
+      - "5433:5432"
+    volumes:
+      - ./docker/postgres:/varlib/postgres/database
+    environment:
+      POSTGRESS_USER: ${DB_USERNAME}
+      POSTGRESS_PASSWORD: ${DB_PASSWORD}
+      POSTGRESS_DB: ${DB-DATABASE}
+      POSTGRESS_HOST-AUTH_METHOD: "trust"
+    networks:
+      - webapp  
